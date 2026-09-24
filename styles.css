@@ -1,0 +1,231 @@
+/* =========================================================
+   1. VARIABLES GLOBALES
+   :root es la raíz del documento. Las variables (--nombre)
+   definidas aquí se pueden usar en todo el CSS con var(--nombre).
+   Así, si quieres cambiar un color, lo cambias en un solo sitio.
+   ========================================================= */
+:root {
+  --fondo: #f4f0fb;          /* lavanda muy suave para el fondo */
+  --superficie: #ffffff;     /* fondo claro de las cajas */
+  --morado: #6b3fa0;         /* acento principal */
+  --morado-oscuro: #3d2360;  /* barras de título y banner */
+  --texto: #2b2233;          /* texto principal (casi negro) */
+  --texto-suave: #6a6075;    /* texto secundario */
+  --borde: #d9cdea;          /* bordes finos */
+  --acento: var(--morado);   /* acento por defecto; cada tablón lo cambia */
+}
+
+/* =========================================================
+   2. ESTILOS BASE
+   ========================================================= */
+
+/* box-sizing: border-box hace que padding y borde se incluyan
+   en el ancho del elemento. Evita sorpresas al medir cajas. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--fondo);
+  color: var(--texto);
+  /* Fuentes del sistema, sencillas, como un imageboard clásico */
+  font-family: Verdana, Arial, Helvetica, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+a {
+  color: var(--morado);
+}
+
+a:hover {
+  color: var(--morado-oscuro);
+}
+
+/* =========================================================
+   3. BANNER (header)
+   ========================================================= */
+.banner {
+  text-align: center;
+  padding: 2rem 1rem 1.5rem;
+  border-bottom: 3px solid var(--morado);
+  background: var(--superficie);
+}
+
+.banner-nombre {
+  margin: 0;
+  font-size: 3rem;            /* nombre grande */
+  color: var(--morado-oscuro);
+  letter-spacing: 0.05em;
+}
+
+.banner-lema {
+  margin: 0.25rem 0 0;
+  font-style: italic;
+  color: var(--morado);
+}
+
+/* =========================================================
+   4. GRID PRINCIPAL (main)
+   display: grid convierte al contenedor en una cuadrícula.
+   grid-template-columns: 1fr 2fr = dos columnas; la derecha
+   ocupa el doble que la izquierda (fr = "fracción" del espacio).
+   gap = separación entre columnas y filas.
+   ========================================================= */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 1.5rem;
+  max-width: 1000px;          /* no se estira infinito en pantallas grandes */
+  margin: 2rem auto;          /* "auto" a los lados = centrado */
+  padding: 0 1rem;
+  align-items: start;         /* cada caja mide lo que su contenido, no se estira */
+}
+
+/* Media query: estas reglas solo se aplican si la pantalla
+   mide menos de 768px (móviles). Pasamos a una sola columna. */
+@media (max-width: 767px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .banner-nombre {
+    font-size: 2.25rem;
+  }
+}
+
+/* =========================================================
+   5. COMPONENTE REUTILIZABLE: "caja con encabezado"
+   Se define una sola vez. Cualquier elemento con estas clases
+   tendrá el mismo aspecto: barra oscura arriba, cuerpo claro.
+   ========================================================= */
+.caja {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 4px;
+  overflow: hidden;           /* recorta la barra para respetar las esquinas redondeadas */
+}
+
+.caja-titulo {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  background: var(--morado-oscuro);
+  color: #ffffff;
+  font-size: 1rem;
+}
+
+.caja-cuerpo {
+  padding: 0.75rem;
+}
+
+/* Quita el margen extra del primer y último párrafo dentro de la caja */
+.caja-cuerpo > :first-child { margin-top: 0; }
+.caja-cuerpo > :last-child  { margin-bottom: 0; }
+
+/* =========================================================
+   5b. COLUMNA IZQUIERDA + CAJA DE IMAGEN
+   ========================================================= */
+
+/* La columna es un grid de una sola columna.
+   grid-auto-rows: 1fr hace que TODAS las filas midan lo mismo:
+   la más alta marca la altura y las demás se igualan a ella.
+   Por eso la caja de imagen mide igual que "¿Qué es TrueChan?". */
+.columna {
+  display: grid;
+  grid-auto-rows: 1fr;
+  gap: 1.5rem;
+}
+
+.caja-imagen {
+  margin: 0;                  /* <figure> trae márgenes por defecto; los quitamos */
+  position: relative;         /* punto de referencia para posicionar la imagen dentro */
+  background: transparent;    /* sin relleno: solo se ve el contorno */
+  border: 1px solid var(--borde);  /* mismo contorno que las otras cajas */
+}
+
+/* La imagen llena la caja sin cambiar su tamaño.
+   position: absolute + inset: 0 la estira a los 4 bordes de la caja,
+   así una imagen enorme no hace crecer la caja.
+   object-fit: cover la recorta para rellenar sin deformarse. */
+.caja-imagen img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* =========================================================
+   6. TARJETAS DE TABLONES
+   ========================================================= */
+
+/* Contenedor de las tarjetas: las apila con separación */
+.tablones {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Cada clase de tablón solo redefine la variable --acento.
+   Las variables CSS se "heredan", así que todo lo que use
+   var(--acento) dentro de esa tarjeta tomará su color. */
+.tablero-anime  { --acento: #e0569b; }  /* rosa */
+.tablero-juegos { --acento: #2e9e5b; }  /* verde */
+.tablero-musica { --acento: #8a4fd1; }  /* morado */
+
+.tarjeta {
+  display: block;             /* el <a> ocupa todo el ancho, no solo el texto */
+  padding: 0.75rem 1rem;
+  background: var(--fondo);
+  border: 1px solid var(--borde);
+  border-left: 5px solid var(--acento);   /* el borde de color del tablón */
+  border-radius: 4px;
+  color: var(--texto);
+  text-decoration: none;      /* quita el subrayado típico de los enlaces */
+  /* transition anima suavemente los cambios del :hover */
+  transition: background-color 0.15s, border-color 0.15s, transform 0.15s;
+}
+
+.tarjeta-nombre {
+  display: block;
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: var(--acento);
+}
+
+.tarjeta-desc {
+  display: block;
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+}
+
+/* :hover = cuando el ratón está encima.
+   :focus-visible = cuando se llega con el teclado (Tab), para accesibilidad. */
+.tarjeta:hover,
+.tarjeta:focus-visible {
+  background: var(--superficie);
+  border-color: var(--acento);            /* todo el borde toma el color del tablón */
+  color: var(--texto);
+  transform: translateX(4px);             /* pequeño desplazamiento a la derecha */
+  outline: none;
+}
+
+/* =========================================================
+   7. PIE DE PÁGINA (footer)
+   ========================================================= */
+.pie {
+  text-align: center;
+  padding: 1.5rem 1rem;
+  border-top: 1px solid var(--borde);
+  font-size: 0.9rem;
+}
+
+.pie nav {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;            /* en pantallas muy estrechas los enlaces bajan de línea */
+  gap: 1.5rem;
+}

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<!-- lang="es" le dice al navegador y a lectores de pantalla que la página está en español -->
+<html lang="es">
+<head>
+  <!-- Codificación de caracteres: permite usar tildes, ñ y ¿? sin problemas -->
+  <meta charset="UTF-8">
+  <!-- Hace que la página se adapte al ancho real del móvil (necesario para la media query) -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TrueChan — U wish i was wrong bitch</title>
+  <!-- Enlazamos la hoja de estilos externa -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- ===== BANNER ===== -->
+  <!-- <header> es la cabecera de la página: logo/nombre y lema -->
+  <header class="banner">
+    <h1 class="banner-nombre">TrueChan</h1>
+    <p class="banner-lema">U wish i was wrong bitch</p>
+  </header>
+
+  <!-- ===== CONTENIDO PRINCIPAL ===== -->
+  <!-- <main> contiene lo principal de la página. La clase "grid" lo divide en dos columnas -->
+  <main class="grid">
+
+    <!-- Columna izquierda: un contenedor que apila dos cajas una encima de otra.
+         Sin él, la caja nueva caería en otra fila del grid principal. -->
+    <div class="columna">
+
+    <!-- Primera caja: "caja con encabezado" -->
+    <!-- <section> agrupa contenido relacionado con su propio título -->
+    <section class="caja">
+      <h2 class="caja-titulo">¿Qué es TrueChan?</h2>
+      <div class="caja-cuerpo">
+        <p>
+         TrueChan es un foro anonimo basado en la libre expresion
+          sientete libre de publicar sin miedo :3
+        </p>
+        <p>Antes de publicar, lee las <a href="/reglas">reglas del sitio</a>.</p>
+      </div>
+    </section>
+
+    <!-- Segunda caja: vacía, para una imagen. Mide lo mismo que la de arriba.
+         <figure> es la etiqueta semántica para imágenes (y otros contenidos ilustrativos).
+         Para poner tu imagen, borra el comentario de abajo y cambia la ruta:
+         <img src="imagenes/mi-imagen.png" alt="Describe aquí lo que muestra la imagen">
+         El "alt" es obligatorio: lo leen los lectores de pantalla y se muestra si la imagen falla. -->
+    <figure class="caja caja-imagen">
+     <img src="https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExanp6YTQwdWRsMWh0MG5zYTI3dnRqenlkd25pMmg5djcwZjF3dzIwdyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/lkbNG2zqzHZUA/giphy.gif" alt="TrueChan :<">
+    </figure>
+    </div>
+
+
+
+    <!-- Columna derecha: la misma caja reutilizada, ahora con los tablones -->
+    <section class="caja">
+      <h2 class="caja-titulo">Tablones</h2>
+      <!-- <nav> porque estas tarjetas sirven para navegar a otras secciones del sitio -->
+      <nav class="caja-cuerpo tablones" aria-label="Lista de tablones">
+
+        <!-- Cada tarjeta es un <a> entero: se puede hacer clic en cualquier parte.
+             La clase tablero-* solo define el color de acento (ver styles.css) -->
+        <a class="tarjeta tablero-anime" href="/anime/">
+          <span class="tarjeta-nombre">/anime/</span>
+          <span class="tarjeta-desc">Anime, manga y cultura otaku.</span>
+        </a>
+
+        <a class="tarjeta tablero-juegos" href="/juegos/">
+          <span class="tarjeta-nombre">/juegos/</span>
+          <span class="tarjeta-desc">Videojuegos de todas las épocas y plataformas.</span>
+        </a>
+
+        <a class="tarjeta tablero-musica" href="/musica/">
+          <span class="tarjeta-nombre">/musica/</span>
+          <span class="tarjeta-desc">Comparte lo que escuchas y descubre algo nuevo.</span>
+        </a>
+
+      </nav>
+    </section>
+
+  </main>
+
+  <!-- ===== PIE DE PÁGINA ===== -->
+  <footer class="pie">
+    <nav aria-label="Enlaces del sitio">
+      <a href="/reglas">Reglas</a>
+      <a href="/acerca">Acerca de</a>
+      <a href="/contacto">Contacto</a>
+    </nav>
+  </footer>
+
+</body>
+</html>
