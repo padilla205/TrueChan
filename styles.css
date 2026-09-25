@@ -18,6 +18,7 @@
   --titulo: var(--morado-oscuro);  /* color de los títulos grandes */
   --error: #c0392b;                /* mensajes de error */
   --greentext: #789922;            /* líneas que empiezan por ">" */
+  --tam-barra: 0.9rem;             /* letra de la barra de tablones y de los controles de la esquina */
   /* color-scheme avisa al navegador del tema: así pinta los campos
      de formulario y las barras de scroll a juego */
   color-scheme: light;
@@ -339,6 +340,47 @@ a:hover {
   color: var(--acento);
 }
 
+/* ---------- Barra de tablones (arriba del todo) ----------
+   Estilo clásico de imageboard: [ Inicio ] [ anime / juegos / musica ] */
+.barra-tablones {
+  display: flex;             /* pone "Inicio" y la lista en la misma línea */
+  flex-wrap: wrap;           /* en pantallas estrechas baja a otra línea */
+  gap: 0.5rem;
+  padding: 0.4rem 1rem;
+  font-size: var(--tam-barra);
+  color: var(--texto-suave);
+  background: var(--superficie);
+  border-bottom: 1px solid var(--borde);
+}
+
+/* Quitamos los puntos y márgenes que la lista trae por defecto */
+.barra-tablones ul {
+  display: flex;
+  flex-wrap: wrap;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Corchetes decorativos con ::before / ::after (no son texto real,
+   así los lectores de pantalla no los leen como contenido) */
+.barra-tablones > a::before,
+.barra-tablones ul::before { content: "["; margin-right: 0.3rem; }
+.barra-tablones > a::after,
+.barra-tablones ul::after  { content: "]"; margin-left: 0.3rem; }
+
+/* Separador "/" entre tablones (a partir del segundo <li>) */
+.barra-tablones li + li::before {
+  content: "/";
+  margin: 0 0.3rem;
+}
+
+/* El tablón actual: en negrita y con el color del tablón */
+.barra-tablones a[aria-current="page"] {
+  font-weight: bold;
+  color: var(--acento);
+}
+
 .banner-migas {
   font-size: 0.85rem;
   color: var(--texto-suave);
@@ -525,19 +567,35 @@ a:hover {
 /* =========================================================
    9. BOTÓN DE MODO OSCURO / CLARO
    ========================================================= */
-.boton-tema {
-  /* position: fixed lo "pega" a la ventana: se queda en la
-     esquina superior derecha aunque hagas scroll */
+/* Contenedor de la esquina (selector de estilo + botón de tema).
+   position: fixed lo "pega" a la ventana: se queda en la esquina
+   superior derecha aunque hagas scroll. */
+.controles-esquina {
   position: fixed;
-  top: 1rem;
+  top: 0.25rem;               /* centrado a la altura de la barra de tablones */
   right: 1rem;
   z-index: 10;                /* por encima del resto de elementos */
+  display: flex;              /* los dos controles en fila */
+  align-items: flex-start;
+  gap: 0.5rem;
+  /* Misma letra que la barra de tablones. Todo lo de dentro se mide
+     en "em" (1em = este tamaño de letra), así crece o encoge a la vez */
+  font-size: var(--tam-barra);
+}
 
+/* Todos los iconos de la esquina miden lo mismo que el texto (1em).
+   Esto pisa los width/height escritos en el HTML */
+.controles-esquina svg {
+  width: 1em;
+  height: 1em;
+}
+
+.boton-tema {
   display: flex;
   align-items: center;
   gap: 0;                     /* sin hueco mientras está plegado */
-  height: 2.75rem;
-  padding: 0 0.8rem;
+  height: 1.9em;
+  padding: 0 0.7em;
   border: 2px solid var(--acento);
   border-radius: 999px;       /* radio enorme = forma de píldora */
   background: var(--superficie);
@@ -545,7 +603,7 @@ a:hover {
   font: inherit;
   font-weight: bold;
   cursor: pointer;
-  box-shadow: 0 3px 0 var(--acento);   /* mismo efecto botón que las tarjetas */
+  box-shadow: 0 2px 0 var(--acento);   /* mismo efecto botón que las tarjetas */
   transition: gap 0.35s, background-color 0.3s, color 0.3s,
               transform 0.1s, box-shadow 0.1s;
 }
@@ -553,8 +611,8 @@ a:hover {
 /* Caja de los iconos: los dos SVG se colocan uno ENCIMA del otro */
 .boton-tema-iconos {
   position: relative;
-  width: 20px;
-  height: 20px;
+  width: 1em;
+  height: 1em;
   flex-shrink: 0;
 }
 
@@ -613,7 +671,7 @@ a:hover {
 
 /* Al pulsarlo se hunde, como las tarjetas */
 .boton-tema:active {
-  transform: translateY(3px);
+  transform: translateY(2px);
   box-shadow: 0 0 0 var(--acento);
 }
 
@@ -626,7 +684,491 @@ a:hover {
   .pie,
   .boton-tema,
   .boton-tema-iconos svg,
-  .boton-tema-texto {
+  .boton-tema-texto,
+  .boton-estilo,
+  .flecha-estilo,
+  .menu-estilos,
+  .opcion-estilo {
     transition: none;
+  }
+}
+
+/* =========================================================
+   10. SELECTOR DE ESTILO (lista desplegable)
+   ========================================================= */
+
+/* position: relative convierte este contenedor en la "referencia"
+   del menú: el menú (absolute) se coloca respecto a él */
+.selector-estilo {
+  position: relative;
+}
+
+/* Mismo aspecto de píldora que el botón de tema */
+.boton-estilo {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  height: 1.9em;
+  padding: 0 0.7em;
+  border: 2px solid var(--acento);
+  border-radius: 999px;
+  background: var(--superficie);
+  color: var(--titulo);
+  font: inherit;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 2px 0 var(--acento);
+  transition: background-color 0.3s, color 0.3s, transform 0.1s, box-shadow 0.1s;
+}
+
+.boton-estilo:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 3px;
+}
+
+.boton-estilo:active {
+  transform: translateY(2px);
+  box-shadow: 0 0 0 var(--acento);
+}
+
+/* La flecha gira media vuelta cuando el menú está abierto.
+   Leemos aria-expanded (lo pone el JS) con un selector de atributo. */
+.flecha-estilo {
+  transition: transform 0.3s ease;
+}
+
+.boton-estilo[aria-expanded="true"] .flecha-estilo {
+  transform: rotate(180deg);
+}
+
+/* ----- El menú desplegable -----
+   Siempre está en la página, pero CERRADO es invisible:
+   transparente, un poco más arriba y un poco más pequeño.
+   Al abrirlo, transition anima esos valores hasta los normales. */
+.menu-estilos {
+  position: absolute;
+  top: calc(100% + 0.6rem);   /* justo debajo del botón, con un hueco */
+  right: 0;                   /* alineado con el borde derecho del botón */
+  min-width: 11rem;
+  margin: 0;
+  padding: 0.4rem;
+  list-style: none;
+  background: var(--superficie);
+  border: 2px solid var(--acento);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+
+  /* Estado cerrado */
+  opacity: 0;
+  transform: translateY(-0.5rem) scale(0.95);
+  transform-origin: top right;   /* crece desde la esquina del botón */
+  visibility: hidden;            /* no se puede pulsar ni llegar con Tab */
+
+  /* Al CERRAR: primero se desvanece (0.25s) y DESPUÉS se oculta
+     (visibility espera 0.25s). Si no, desaparecería de golpe. */
+  transition: opacity 0.2s ease,
+              transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+              visibility 0s linear 0.25s;
+}
+
+/* Estado abierto: el menú es el hermano (+) del botón expandido */
+.boton-estilo[aria-expanded="true"] + .menu-estilos {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  visibility: visible;
+  /* Al ABRIR: visibility cambia al instante (sin espera)
+     para que se vea la animación desde el principio */
+  transition: opacity 0.2s ease,
+              transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+              visibility 0s;
+}
+
+/* Cada opción es un <button> que ocupa todo el ancho */
+.opcion-estilo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+/* Marca ✓ decorativa. Siempre ocupa su hueco (para que los nombres
+   queden alineados) pero solo se ve en la opción activa.
+   El '/ ""' es el "texto alternativo": vacío = los lectores de
+   pantalla no lo leen (ya anuncian "pulsado" por aria-pressed). */
+.opcion-estilo::before {
+  content: "✓" / "";
+  width: 1em;
+  opacity: 0;
+}
+
+.opcion-estilo[aria-pressed="true"] {
+  color: var(--acento);
+  font-weight: bold;
+}
+
+.opcion-estilo[aria-pressed="true"]::before {
+  opacity: 1;
+}
+
+/* color-mix mezcla el acento con transparente: un fondo suave
+   del color del tablón al pasar el ratón */
+.opcion-estilo:hover {
+  background: color-mix(in srgb, var(--acento) 15%, transparent);
+}
+
+.opcion-estilo:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: -2px;
+}
+
+/* =========================================================
+   11. ESTILOS
+   Cada estilo cambia las variables de :root, igual que el modo
+   oscuro. "clasico" es el diseño actual, así que no necesita nada.
+
+   Para añadir uno (ejemplo "yotsuba"):
+   1) En js/estilo.js, dentro de ESTILOS:   yotsuba: 'Yotsuba',
+   2) Aquí, sus colores en modo claro y en modo oscuro:
+
+   :root[data-estilo="yotsuba"] {
+     --fondo: #ffffee;
+     --morado: #800000;
+     ...
+   }
+   :root[data-estilo="yotsuba"][data-tema="oscuro"] {
+     --fondo: #1d1d1d;
+     ...
+   }
+
+   Ojo: el bloque oscuro lleva los DOS atributos. Así es más
+   específico que el del modo claro y gana cuando ambos coinciden.
+   ========================================================= */
+
+/* ---------- Estilo 8 bits (modo claro) ----------
+   Idea: colores de consola retro (rojo NES + beige).
+   Solo cambiamos variables: todo lo que usa var(--...)
+   cambia de color solo. */
+:root[data-estilo="8bits"] {
+  --fondo: #d3c492;            /* beige tipo cartucho viejo */
+  --superficie: #f5edd6;       /* papel claro para las cajas */
+  --morado: #d82800;           /* rojo NES: enlaces y detalles */
+  --morado-oscuro: #202020;    /* casi negro para barras */
+  --texto: #202020;            /* texto casi negro */
+  --texto-suave: #5c5c5c;      /* gris para texto secundario */
+  --borde: #202020;            /* bordes negros gruesos tipo píxel */
+  --acento: var(--morado);     /* por defecto rojo; cada tablón lo cambia abajo */
+  --barra: #202020;            /* barras de título negras */
+  --texto-barra: #f5edd6;      /* texto claro sobre la barra negra */
+  --titulo: #d82800;           /* títulos grandes en rojo */
+  --error: #d82800;
+  --greentext: #306230;        /* verde GameBoy para el ">texto" */
+  color-scheme: light;
+}
+
+/* ---------- Estilo 8 bits (modo oscuro) ----------
+   Idea: arcade de noche (fondo casi negro + verde neón).
+   Lleva los DOS atributos para ganar al bloque claro. */
+:root[data-estilo="8bits"][data-tema="oscuro"] {
+  --fondo: #0f0f1b;            /* azul noche casi negro */
+  --superficie: #1a1c2c;       /* cajas azul oscuro */
+  --morado: #00e436;           /* verde neón: enlaces y detalles */
+  --texto: #e8e8e8;            /* texto casi blanco */
+  --texto-suave: #94b0c2;      /* gris azulado */
+  --borde: #00e436;            /* bordes verdes neón */
+  --barra: #000000;            /* barras negras */
+  --texto-barra: #00e436;      /* texto verde sobre negro */
+  --titulo: #00e436;           /* títulos en verde neón */
+  --error: #ff004d;            /* rojo neón para errores */
+  --greentext: #00e436;
+  color-scheme: dark;
+}
+
+/* Los tablones mantienen su color, pero en versión píxel.
+   En claro son oscuros; en oscuro son neón para que se lean. */
+:root[data-estilo="8bits"] .tablero-anime  { --acento: #ff004d; }  /* rosa arcade */
+:root[data-estilo="8bits"] .tablero-juegos { --acento: #008800; }  /* verde consola */
+:root[data-estilo="8bits"] .tablero-musica { --acento: #7c00d8; }  /* morado arcade */
+:root[data-estilo="8bits"][data-tema="oscuro"] .tablero-anime  { --acento: #ff77a8; }
+:root[data-estilo="8bits"][data-tema="oscuro"] .tablero-juegos { --acento: #00e436; }
+:root[data-estilo="8bits"][data-tema="oscuro"] .tablero-musica { --acento: #b550f0; }
+
+/* ---------- Formas cuadradas tipo píxel ----------
+   El color ya está arriba; aquí quitamos lo redondo y
+   ponemos sombras duras (sin difuminar) y letra monoespaciada. */
+
+/* Letra de máquina: todos los navegadores la tienen,
+   así no hay que descargar ninguna fuente. */
+:root[data-estilo="8bits"] body {
+  font-family: "Courier New", Courier, monospace;
+}
+
+/* Títulos en MAYÚSCULAS con sombra dura de 2 píxeles,
+   como los carteles de los juegos viejos. */
+:root[data-estilo="8bits"] .banner-nombre,
+:root[data-estilo="8bits"] .caja-titulo,
+:root[data-estilo="8bits"] .seccion-titulo,
+:root[data-estilo="8bits"] .tarjeta-nombre {
+  text-transform: uppercase;   /* convierte el texto a mayúsculas */
+  letter-spacing: 0.08em;      /* separa un poco las letras */
+}
+
+/* Sombra de 3px sin difuminar: parece un píxel desplazado */
+:root[data-estilo="8bits"] .banner-nombre {
+  text-shadow: 3px 3px 0 var(--borde);
+}
+
+/* Cajas y tarjetas: esquinas cuadradas, borde grueso
+   y sombra sólida de 4px (el "grosor" del píxel). */
+:root[data-estilo="8bits"] .banner,
+:root[data-estilo="8bits"] .caja,
+:root[data-estilo="8bits"] .hilo,
+:root[data-estilo="8bits"] .tarjeta {
+  border-radius: 0;            /* 0 = esquinas en punta */
+  border-width: 3px;           /* borde más grueso */
+  box-shadow: 4px 4px 0 var(--borde);
+}
+
+/* Botones, menú y campos: también cuadrados */
+:root[data-estilo="8bits"] .boton,
+:root[data-estilo="8bits"] .boton-tema,
+:root[data-estilo="8bits"] .boton-estilo,
+:root[data-estilo="8bits"] .menu-estilos,
+:root[data-estilo="8bits"] .opcion-estilo,
+:root[data-estilo="8bits"] .formulario input[type="text"],
+:root[data-estilo="8bits"] .formulario textarea {
+  border-radius: 0;
+}
+
+/* Los botones píldora (redondos) pasan a ser cuadrados */
+:root[data-estilo="8bits"] .boton-tema,
+:root[data-estilo="8bits"] .boton-estilo {
+  border-width: 3px;
+}
+
+/* Las imágenes se ven "pixeladas" a propósito,
+   como los sprites ampliados de antes. */
+:root[data-estilo="8bits"] img {
+  image-rendering: pixelated;
+}
+
+/* =========================================================
+   12. HILOS: RESPONDER, CITAS, RESPUESTAS E IMÁGENES
+   ========================================================= */
+
+/* Las respuestas no tienen asunto: si el span está vacío (:empty),
+   lo quitamos para que no deje un hueco extra en la cabecera */
+.hilo-asunto:empty {
+  display: none;
+}
+
+/* El número "N.º 123" en la página del hilo es un enlace:
+   que no se vea azul, sino como el resto de la cabecera */
+a.hilo-numero {
+  color: inherit;
+}
+
+/* [Responder]: en el tablón es un <a> y en el hilo un <button>.
+   Quitamos al botón su aspecto de botón para que se vean iguales. */
+.boton-responder {
+  padding: 0;
+  background: none;
+  border: none;
+  font: inherit;
+  color: var(--acento);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+/* Corchetes decorativos, como en la barra de tablones */
+.boton-responder::before { content: "["; color: var(--texto-suave); }
+.boton-responder::after  { content: "]"; color: var(--texto-suave); }
+
+.boton-responder:hover,
+.boton-responder:focus-visible {
+  text-decoration: underline;
+}
+
+/* "3 respuestas" debajo del comentario, en el tablón */
+.hilo-resumen {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: var(--texto-suave);
+}
+
+/* Citas >>123 */
+.cita {
+  color: var(--acento);
+}
+
+/* Lista de respuestas: un poco metida hacia la derecha,
+   para que se vea que "cuelgan" del OP */
+.respuestas {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;    /* cada respuesta mide lo que su contenido */
+  gap: 0.5rem;
+  margin: 0.5rem 0 0 1.5rem;
+}
+
+/* Las respuestas son cajas más discretas que el OP */
+.hilo.respuesta {
+  max-width: 100%;
+  border-left-width: 1px;
+}
+
+/* Miniaturas más pequeñas en las respuestas */
+.respuesta .hilo-imagen img {
+  max-width: 125px;
+  max-height: 125px;
+}
+
+/* :target = el mensaje al que apunta la dirección (#p123).
+   Lo resaltamos para que se vea a dónde has saltado. */
+.hilo:target {
+  outline: 2px dashed var(--acento);
+  outline-offset: 2px;
+}
+
+/* ---------- "(Tú)" y respuestas recibidas ---------- */
+
+/* "(Tú)" junto al nombre de tus mensajes */
+.hilo-tu {
+  color: var(--acento);
+  font-weight: bold;
+}
+
+/* Un mensaje que cita uno tuyo (alguien te ha "tageado"):
+   color-mix mezcla un 10 % del color del tablón con el fondo de la caja */
+.hilo.te-cita {
+  background: color-mix(in srgb, var(--acento) 10%, var(--superficie));
+}
+
+/* "Respuestas: >>7 >>9" debajo de cada mensaje */
+.hilo-respondido {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: var(--texto-suave);
+}
+
+/* ---------- Imágenes: visor en el centro (clic) ---------- */
+
+/* Cursor de lupa: indica que se puede hacer clic para ampliar */
+.miniatura {
+  cursor: zoom-in;
+}
+
+/* El <dialog> ya sale centrado por defecto (margin: auto).
+   Le quitamos el marco y el fondo blanco: solo se ve la imagen. */
+.visor {
+  padding: 0;
+  border: none;
+  background: transparent;
+  max-width: 95vw;
+  max-height: 95vh;
+  overflow: visible;
+  cursor: zoom-out;           /* clic = cerrar */
+}
+
+/* La imagen cabe siempre en la pantalla (95 % del ancho y del alto,
+   vw y vh = porcentaje del tamaño de la ventana) sin deformarse */
+.visor img {
+  display: block;
+  max-width: 95vw;
+  max-height: 95vh;
+  box-shadow: 0 4px 24px rgb(0 0 0 / 0.5);
+}
+
+/* ::backdrop = la capa que tapa la página detrás del <dialog> */
+.visor::backdrop {
+  background: rgb(0 0 0 / 0.8);
+}
+
+/* Botón × arriba a la derecha de la PANTALLA (fixed), no de la imagen */
+.visor-cerrar {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: none;
+  border-radius: 50%;
+  background: var(--barra);
+  color: var(--texto-barra);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.visor-cerrar:hover,
+.visor-cerrar:focus-visible {
+  background: var(--acento);
+}
+
+/* :has() = "que contenga". Mientras el visor está abierto ([open]),
+   la página de detrás no hace scroll */
+body:has(.visor[open]) {
+  overflow: hidden;
+}
+
+/* ---------- Imágenes: vista previa al pasar el ratón ---------- */
+
+/* Centrada en la pantalla:
+   - position: fixed = se coloca respecto a la ventana, no a la página
+   - top/left 50% pone su esquina superior izquierda en el centro...
+   - ...y translate(-50%, -50%) la mueve atrás la mitad de SU tamaño,
+     así el centro de la imagen queda justo en el centro de la pantalla
+   pointer-events: none = el ratón la "atraviesa"; si no, al aparecer
+   encima de la miniatura la taparía y parpadearía. */
+.vista-previa {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 100;               /* por encima de todo lo demás */
+  max-width: 90vw;            /* nunca más grande que la pantalla */
+  max-height: 90vh;
+  border: 1px solid var(--borde);
+  background: var(--superficie);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.35);
+  pointer-events: none;
+}
+
+/* El atributo hidden debe ganar al display que pueda tener */
+.vista-previa[hidden] {
+  display: none;
+}
+
+/* ---------- Citas: vista previa del mensaje citado ---------- */
+
+/* Igual que la vista previa de imagen: fija, sobre todo lo demás,
+   y el ratón la atraviesa (pointer-events: none) */
+.vista-cita {
+  position: fixed;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.vista-cita[hidden] {
+  display: none;
+}
+
+/* La copia del mensaje, con sombra para que se vea "flotando" */
+.vista-cita .hilo {
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.35);
+}
+
+/* ---------- Móvil ---------- */
+@media (max-width: 767px) {
+  .respuestas {
+    margin-left: 0.5rem;      /* menos sangría: la pantalla es estrecha */
   }
 }

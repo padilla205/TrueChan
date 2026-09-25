@@ -12,32 +12,64 @@
   <!-- Sin defer a propósito: aplica el tema ANTES de pintar la página,
        así no se ve un destello del tema equivocado -->
   <script src="js/tema.js"></script>
+  <!-- Igual que tema.js: sin defer para aplicar el estilo antes de pintar -->
+  <script src="js/estilo.js"></script>
 </head>
 <body>
 
   <!-- ===== BANNER ===== -->
   <!-- <header> es la cabecera de la página: logo/nombre y lema -->
   <header class="banner">
-    <!-- Botón de tema. type="button" = no envía formularios.
-         Los SVG son decorativos (aria-hidden); el nombre del botón
-         para lectores de pantalla es el texto de .boton-tema-texto,
-         que el JavaScript cambia según el tema. -->
-    <button type="button" id="boton-tema" class="boton-tema">
-      <span class="boton-tema-iconos" aria-hidden="true">
-        <!-- Luna -->
-        <svg class="icono-luna" viewBox="0 0 24 24" width="20" height="20" fill="none"
-             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-        </svg>
-        <!-- Sol -->
-        <svg class="icono-sol" viewBox="0 0 24 24" width="20" height="20" fill="none"
-             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="4"/>
-          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
-        </svg>
-      </span>
-      <span class="boton-tema-texto">Modo oscuro</span>
-    </button>
+    <!-- ===== CONTROLES DE LA ESQUINA =====
+         Este contenedor es el que está fijo arriba a la derecha.
+         Dentro van el selector de estilo y el botón de tema, uno al lado del otro. -->
+    <div class="controles-esquina">
+
+      <!-- Selector de estilo: un botón que abre/cierra una lista.
+           aria-expanded dice a los lectores de pantalla si está abierta
+           (el JavaScript lo cambia y el CSS lo usa para animar).
+           aria-controls indica qué elemento abre este botón. -->
+      <div class="selector-estilo">
+        <button type="button" id="boton-estilo" class="boton-estilo"
+                aria-expanded="false" aria-controls="menu-estilos">
+          <!-- Paleta de pintor (decorativa) -->
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a10 10 0 0 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.3A5.7 5.7 0 0 0 22 9.7C22 5.4 17.5 2 12 2z"/>
+            <circle cx="7.5" cy="11.5" r="1"/><circle cx="10.5" cy="7.5" r="1"/><circle cx="15.5" cy="7.5" r="1"/>
+          </svg>
+          Estilo
+          <!-- Flecha: gira al abrir el menú -->
+          <svg class="flecha-estilo" viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden="true"
+               stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m6 9 6 6 6-6"/>
+          </svg>
+        </button>
+        <!-- Vacía a propósito: el JavaScript la rellena con los estilos -->
+        <ul id="menu-estilos" class="menu-estilos"></ul>
+      </div>
+
+      <!-- Botón de tema. type="button" = no envía formularios.
+           Los SVG son decorativos (aria-hidden); el nombre del botón
+           para lectores de pantalla es el texto de .boton-tema-texto,
+           que el JavaScript cambia según el tema. -->
+      <button type="button" id="boton-tema" class="boton-tema">
+        <span class="boton-tema-iconos" aria-hidden="true">
+          <!-- Luna -->
+          <svg class="icono-luna" viewBox="0 0 24 24" width="20" height="20" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+          <!-- Sol -->
+          <svg class="icono-sol" viewBox="0 0 24 24" width="20" height="20" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+          </svg>
+        </span>
+        <span class="boton-tema-texto">Modo oscuro</span>
+      </button>
+    </div>
 
     <h1 class="banner-nombre">TrueChan</h1>
     <p class="banner-lema">U wish i was wrong bitch</p>

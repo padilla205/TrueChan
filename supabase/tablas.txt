@@ -1,0 +1,276 @@
+-- =========================================================
+--  TRUECHAN — ESQUEMA DE LA BASE DE DATOS (Supabase / PostgreSQL)
+--
+--  CÓMO USARLO:
+--  1) En Supabase: menú izquierdo → "SQL Editor" → "New query".
+--  2) Copia TODO este archivo, pégalo y pulsa "Run".
+--  3) Debe terminar con "Success. No rows returned".
+--
+--  Se puede ejecutar varias veces sin romper nada: usa
+--  "if not exists", "or replace" y "drop ... if exists".
+--
+--  Las líneas que empiezan por "--" son comentarios: SQL las ignora.
+-- =========================================================
+
+
+-- =========================================================
+--  1. NUMERACIÓN COMPARTIDA
+--  En un imageboard, hilos y respuestas comparten los números
+--  (No.1 es un hilo, No.2 una respuesta, No.3 otro hilo...).
+--  Una "sequence" es un contador que PostgreSQL incrementa solo.
+--  Las dos tablas sacarán su número del mismo contador.
+-- =========================================================
+create sequence if not exists public.numero_publicacion;
+
+
+-- =========================================================
+--  2. TABLA: tablones
+--  Un registro por tablón (anime, juegos, musica...).
+-- =========================================================
+create table if not exists public.tablones (
+  -- "anime", "juegos"... Es lo que aparece en la URL.
+  -- El check obliga a: solo minúsculas y números, de 1 a 20 caracteres.
+  id          text primary key check (id ~ '^[a-z0-9]{1,20}$'),
+  nombre      text not null,
+  descripcion text not null default '',
+  -- timestamptz = fecha y hora con zona horaria; now() = ahora mismo
+  creado_en   timestamptz not null default now()
+);
+
+-- Los tres tablones actuales. "on conflict do nothing" = si ya
+-- existen, no hace nada (así el script se puede repetir).
+insert into public.tablones (id, nombre, descripcion) values
+  ('anime',  '/anime/',  'Anime, manga y cultura otaku.'),
+  ('juegos', '/juegos/', 'Videojuegos de todas las épocas y plataformas.'),
+  ('musica', '/musica/', 'Comparte lo que escuchas y descubre algo nuevo.')
+on conflict (id) do nothing;
+
+
+-- =========================================================
+--  3. TABLA: hilos
+--  El primer mensaje de cada conversación (siempre con imagen).
+-- =========================================================
+create table if not exists public.hilos (
+  -- Número del hilo, sacado del contador compartido
+  id          bigint primary key default nextval('public.numero_publicacion'),
+
+  -- A qué tablón pertenece. "references" = clave foránea: solo
+  -- acepta tablones que existan en la tabla tablones.
+  tablon      text not null references public.tablones (id),
+
+  -- btrim quita espacios al principio y al final antes de contar,
+  -- así un nombre hecho solo de espacios no cuenta como válido.
+  nombre      text not null default 'Anónimo'
+              check (char_length(btrim(nombre)) between 1 and 50),
+
+  -- El asunto es opcional (puede ser null), máximo 100 caracteres
+  asunto      text check (char_length(asunto) <= 100),
+
+  comentario  text not null
+              check (char_length(btrim(comentario)) between 1 and 2000),
+
+  -- Guardamos la RUTA de la imagen dentro de nuestro bucket, no una URL.
+  -- Formato obligatorio: tablon/uuid.extension
+  --   ejemplo: anime/3f2b8c1e-9a4d-4e2f-8b1a-6c5d7e8f9a0b.png
+  -- SEGURIDAD: si aceptáramos cualquier URL, alguien podría poner
+  -- una imagen de SU servidor y ver la IP de todo el que abra el hilo.
+  imagen      text not null
+              check (imagen ~ '^[a-z0-9]{1,20}/[0-9a-f-]{36}\.(png|jpg|jpeg|gif|webp)$'),
+
+  creado_en   timestamptz not null default now(),
+
+  -- Fecha del último "bump" (última respuesta). Sirve para ordenar
+  -- el tablón: los hilos con actividad reciente salen arriba.
+  ultimo_bump timestamptz not null default now()
+);
+
+-- Índice: como el índice de un libro. Hace rápida la consulta
+-- "hilos de este tablón ordenados por último bump".
+create index if not exists hilos_tablon_bump_idx
+  on public.hilos (tablon, ultimo_bump desc);
+
+
+-- =========================================================
+--  4. TABLA: respuestas
+--  Los mensajes dentro de un hilo (la imagen es opcional).
+-- =========================================================
+create table if not exists public.respuestas (
+  id          bigint primary key default nextval('public.numero_publicacion'),
+
+  -- "on delete cascade" = si se borra el hilo, se borran sus respuestas
+  hilo_id     bigint not null references public.hilos (id) on delete cascade,
+
+  nombre      text not null default 'Anónimo'
+              check (char_length(btrim(nombre)) between 1 and 50),
+
+  comentario  text not null
+              check (char_length(btrim(comentario)) between 1 and 2000),
+
+  -- Opcional (puede ser null), mismo formato que en hilos
+  imagen      text
+              check (imagen ~ '^[a-z0-9]{1,20}/[0-9a-f-]{36}\.(png|jpg|jpeg|gif|webp)$'),
+
+  creado_en   timestamptz not null default now()
+);
+
+-- Índice para "respuestas de este hilo, en orden"
+create index if not exists respuestas_hilo_idx
+  on public.respuestas (hilo_id, creado_en);
+
+
+-- =========================================================
+--  5. BUMP AUTOMÁTICO
+--  Cuando se inserta una respuesta, actualizamos ultimo_bump del hilo.
+--  Lo hace la base de datos (un "trigger" = disparador), no el
+--  navegador: los usuarios NO tienen permiso para editar hilos.
+--
+--  "security definer" = la función se ejecuta con los permisos de
+--  quien la creó (tú, el administrador), por eso puede actualizar.
+--  "set search_path = ''" evita un truco conocido para engañar a
+--  estas funciones; por eso escribimos siempre "public.hilos".
+-- =========================================================
+create or replace function public.bump_hilo()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  update public.hilos
+     set ultimo_bump = now()
+   where id = new.hilo_id;   -- "new" es la respuesta recién insertada
+  return new;
+end;
+$$;
+
+drop trigger if exists respuesta_bump on public.respuestas;
+create trigger respuesta_bump
+  after insert on public.respuestas
+  for each row execute function public.bump_hilo();
+
+-- Por defecto, cualquiera puede ejecutar una función nueva. Como
+-- bump_hilo() tiene permisos de administrador, se lo quitamos a
+-- todos: la API pública ya no puede llamarla (/rest/v1/rpc/bump_hilo).
+-- El trigger sigue funcionando: ese permiso solo se comprueba al
+-- crear el trigger, no cada vez que se dispara.
+revoke execute on function public.bump_hilo() from public, anon, authenticated;
+
+
+-- =========================================================
+--  6. PERMISOS (qué puede tocar cada rol)
+--  En Supabase, un visitante sin cuenta usa el rol "anon" y uno
+--  con sesión, "authenticated". Primero les quitamos TODO y luego
+--  damos solo lo necesario (principio de "mínimo privilegio").
+-- =========================================================
+revoke all on public.tablones, public.hilos, public.respuestas
+  from anon, authenticated;
+
+-- Leer: todo el mundo
+grant select on public.tablones, public.hilos, public.respuestas
+  to anon, authenticated;
+
+-- Insertar: SOLO estas columnas. Así nadie puede elegir su propio
+-- número (id), falsear la fecha (creado_en) o subir su hilo
+-- arriba del todo a mano (ultimo_bump). Esos los pone el servidor.
+grant insert (tablon, nombre, asunto, comentario, imagen)
+  on public.hilos to anon, authenticated;
+
+grant insert (hilo_id, nombre, comentario, imagen)
+  on public.respuestas to anon, authenticated;
+
+-- Para poder sacar el siguiente número del contador al insertar
+grant usage on sequence public.numero_publicacion to anon, authenticated;
+
+-- Nadie recibe update ni delete: no se puede editar ni borrar desde
+-- la web. La moderación se hará desde el panel de Supabase.
+
+
+-- =========================================================
+--  7. RLS (Row Level Security = seguridad por filas)
+--  Con RLS activado, la tabla está CERRADA salvo lo que permitan
+--  las "policies" (reglas). Es la protección principal: recuerda
+--  que la clave anon es pública y cualquiera puede usarla.
+-- =========================================================
+alter table public.tablones   enable row level security;
+alter table public.hilos      enable row level security;
+alter table public.respuestas enable row level security;
+
+-- ---- tablones: solo lectura ----
+drop policy if exists "Todos pueden ver los tablones" on public.tablones;
+create policy "Todos pueden ver los tablones"
+  on public.tablones for select
+  to anon, authenticated
+  using (true);                -- true = todas las filas
+
+-- ---- hilos: leer y crear ----
+drop policy if exists "Todos pueden ver los hilos" on public.hilos;
+create policy "Todos pueden ver los hilos"
+  on public.hilos for select
+  to anon, authenticated
+  using (true);
+
+-- "with check" se comprueba sobre la fila NUEVA. Ponemos true porque
+-- los "check" de la tabla ya validan los datos.
+drop policy if exists "Todos pueden crear hilos" on public.hilos;
+create policy "Todos pueden crear hilos"
+  on public.hilos for insert
+  to anon, authenticated
+  with check (true);
+
+-- ---- respuestas: leer y crear ----
+drop policy if exists "Todos pueden ver las respuestas" on public.respuestas;
+create policy "Todos pueden ver las respuestas"
+  on public.respuestas for select
+  to anon, authenticated
+  using (true);
+
+drop policy if exists "Todos pueden responder" on public.respuestas;
+create policy "Todos pueden responder"
+  on public.respuestas for insert
+  to anon, authenticated
+  with check (true);
+
+
+-- =========================================================
+--  8. STORAGE: bucket de imágenes
+--  Un "bucket" es una carpeta en la nube para archivos.
+--  public = true → cualquiera puede VER las imágenes con su URL
+--  (necesario para mostrarlas en los hilos).
+-- =========================================================
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'imagenes',
+  'imagenes',
+  true,
+  2097152,   -- 2 MB máximo por imagen (2 × 1024 × 1024 bytes)
+  array['image/png', 'image/jpeg', 'image/gif', 'image/webp']
+)
+on conflict (id) do update
+  set public             = excluded.public,
+      file_size_limit    = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
+
+-- Subir imágenes: cualquiera, pero SOLO a este bucket y SOLO con
+-- el formato de nombre tablon/uuid.extension (el mismo que exigen
+-- las tablas). Como no hay policy de update ni delete, nadie puede
+-- sobrescribir ni borrar la imagen de otro.
+drop policy if exists "Todos pueden subir imagenes" on storage.objects;
+create policy "Todos pueden subir imagenes"
+  on storage.objects for insert
+  to anon, authenticated
+  with check (
+    bucket_id = 'imagenes'
+    and name ~ '^[a-z0-9]{1,20}/[0-9a-f-]{36}\.(png|jpg|jpeg|gif|webp)$'
+  );
+
+
+-- =========================================================
+--  PENDIENTE (todavía NO está resuelto con este script):
+--  - Spam / flood: nada limita cuántos mensajes manda alguien.
+--    Antes de abrir al público: captcha + límite por minuto
+--    (con una Edge Function).
+--  - Metadatos EXIF (pueden incluir la ubicación GPS de la foto):
+--    hay que limpiarlos al subir la imagen.
+--  - Alguien podría subir imágenes sin crear un hilo: habrá que
+--    borrar periódicamente las imágenes "huérfanas".
+-- =========================================================

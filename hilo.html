@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- El JavaScript cambia el título por el del hilo cuando lo carga -->
+  <title>Hilo - TrueChan</title>
+  <!-- Esta página está en la raíz (junto a index.html), así que las rutas
+       NO llevan "../" -->
+  <link rel="stylesheet" href="styles.css">
+  <!-- Sin defer a propósito: aplican tema y estilo ANTES de pintar la página -->
+  <script src="js/tema.js"></script>
+  <script src="js/estilo.js"></script>
+</head>
+
+<!-- UNA sola página para los hilos de TODOS los tablones: hilo.html?id=123
+     No sabemos el tablón hasta cargar el hilo, así que el JavaScript
+     pondrá después la clase tablero-anime / tablero-juegos... en el <body>
+     (y con ella el color del tablón). -->
+<body>
+
+  <!-- ===== BARRA DE TABLONES =====
+       data-tablon permite al JavaScript marcar con aria-current="page"
+       el tablón al que pertenece el hilo. -->
+  <nav class="barra-tablones" aria-label="Tablones">
+    <a href="index.html">Inicio</a>
+    <ul>
+      <li><a href="anime/index.html" data-tablon="anime">anime</a></li>
+      <li><a href="juegos/index.html" data-tablon="juegos">juegos</a></li>
+      <li><a href="musica/index.html" data-tablon="musica">musica</a></li>
+    </ul>
+  </nav>
+
+  <!-- ===== BANNER DEL TABLÓN ===== -->
+  <header class="banner banner-tablon">
+    <!-- ===== CONTROLES DE LA ESQUINA =====
+         Este contenedor es el que está fijo arriba a la derecha.
+         Dentro van el selector de estilo y el botón de tema, uno al lado del otro. -->
+    <div class="controles-esquina">
+
+      <!-- Selector de estilo: un botón que abre/cierra una lista.
+           aria-expanded dice a los lectores de pantalla si está abierta
+           (el JavaScript lo cambia y el CSS lo usa para animar).
+           aria-controls indica qué elemento abre este botón. -->
+      <div class="selector-estilo">
+        <button type="button" id="boton-estilo" class="boton-estilo"
+                aria-expanded="false" aria-controls="menu-estilos">
+          <!-- Paleta de pintor (decorativa) -->
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a10 10 0 0 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.3A5.7 5.7 0 0 0 22 9.7C22 5.4 17.5 2 12 2z"/>
+            <circle cx="7.5" cy="11.5" r="1"/><circle cx="10.5" cy="7.5" r="1"/><circle cx="15.5" cy="7.5" r="1"/>
+          </svg>
+          Estilo
+          <!-- Flecha: gira al abrir el menú -->
+          <svg class="flecha-estilo" viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden="true"
+               stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m6 9 6 6 6-6"/>
+          </svg>
+        </button>
+        <!-- Vacía a propósito: el JavaScript la rellena con los estilos -->
+        <ul id="menu-estilos" class="menu-estilos"></ul>
+      </div>
+
+      <!-- Botón de tema. type="button" = no envía formularios.
+           Los SVG son decorativos (aria-hidden); el nombre del botón
+           para lectores de pantalla es el texto de .boton-tema-texto,
+           que el JavaScript cambia según el tema. -->
+      <button type="button" id="boton-tema" class="boton-tema">
+        <span class="boton-tema-iconos" aria-hidden="true">
+          <!-- Luna -->
+          <svg class="icono-luna" viewBox="0 0 24 24" width="20" height="20" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+          <!-- Sol -->
+          <svg class="icono-sol" viewBox="0 0 24 24" width="20" height="20" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+          </svg>
+        </span>
+        <span class="boton-tema-texto">Modo oscuro</span>
+      </button>
+    </div>
+
+
+    <!-- "Migas de pan": TrueChan / anime / Hilo N.º 123.
+         Los huecos vacíos los rellena el JavaScript. -->
+    <nav class="banner-migas" aria-label="Estás aquí">
+      <a href="index.html">TrueChan</a> /
+      <a id="migas-tablon"></a> /
+      <span id="migas-hilo">Hilo</span>
+    </nav>
+    <h1 id="banner-nombre" class="banner-nombre">Cargando…</h1>
+    <p id="banner-lema" class="banner-lema"></p>
+  </header>
+
+  <main class="tablon">
+
+    <!-- ===== EL HILO ===== -->
+    <section aria-labelledby="titulo-hilo">
+      <h2 id="titulo-hilo" class="seccion-titulo">Hilo</h2>
+      <!-- Mensaje de estado: "Cargando…", "Este hilo no existe"... -->
+      <p id="estado-hilo" class="sin-hilos">Cargando…</p>
+      <!-- Aquí el JavaScript mete el OP (el primer mensaje) -->
+      <div id="hilo-op" class="lista-hilos"></div>
+      <!-- Y aquí, las respuestas en orden -->
+      <div id="lista-respuestas" class="respuestas"></div>
+    </section>
+
+    <!-- ===== FORMULARIO PARA RESPONDER =====
+         hidden: oculto hasta que el hilo se carga (no se puede
+         responder a un hilo que no existe). -->
+    <section id="caja-responder" class="caja" hidden>
+      <h2 class="caja-titulo">Responder al hilo</h2>
+
+      <!-- novalidate: validamos nosotros en JavaScript con mensajes en español -->
+      <form id="form-respuesta" class="caja-cuerpo formulario" novalidate>
+
+        <label for="nombre">Nombre</label>
+        <input type="text" id="nombre" name="nombre" placeholder="Anónimo" maxlength="50">
+
+        <label for="comentario">Comentario</label>
+        <textarea id="comentario" name="comentario" maxlength="2000" required></textarea>
+
+        <label for="imagen">Imagen</label>
+        <!-- En las respuestas la imagen es OPCIONAL (sin "required") -->
+        <input type="file" id="imagen" name="imagen"
+               accept="image/png, image/jpeg, image/gif, image/webp">
+
+        <div class="formulario-acciones">
+          <button type="submit" class="boton">Publicar respuesta</button>
+          <p class="formulario-ayuda">
+            Imagen opcional (máx. 2 MB). Pulsa [Responder] en un mensaje para citarlo
+            con &gt;&gt;número. Empieza una línea con &gt; para escribir en verde.
+          </p>
+          <!-- role="alert": los lectores de pantalla leen este texto en cuanto cambia -->
+          <p id="form-error" class="formulario-error" role="alert"></p>
+        </div>
+      </form>
+    </section>
+
+    <p><a id="volver-tablon" href="index.html">← Volver al tablón</a></p>
+
+  </main>
+
+  <footer class="pie">
+    <nav aria-label="Enlaces del sitio">
+      <a href="index.html">Inicio</a>
+      <a href="/reglas">Reglas</a>
+      <a href="/acerca">Acerca de</a>
+    </nav>
+  </footer>
+
+  <!-- ===== PLANTILLA DE UN MENSAJE =====
+       Sirve para el OP y para cada respuesta (el JavaScript añade la
+       clase "respuesta" a las respuestas para que se vean distintas). -->
+  <template id="plantilla-mensaje">
+    <article class="hilo">
+      <figure class="hilo-imagen">
+        <!-- Enlace a la imagen original: js/imagenes.js cambia el clic por
+             "abrir en grande en el centro" y añade la vista previa al pasar el ratón -->
+        <a class="enlace-imagen" target="_blank" rel="noopener noreferrer">
+          <img class="miniatura" alt="Imagen adjunta">
+        </a>
+      </figure>
+      <div class="hilo-contenido">
+        <header class="hilo-cabecera">
+          <span class="hilo-asunto"></span>
+          <span class="hilo-nombre"></span>
+          <time class="hilo-fecha"></time>
+          <!-- Enlace permanente a este mensaje (hilo.html?id=1#p5) -->
+          <a class="hilo-numero"></a>
+          <!-- Un <button> y no un enlace: no lleva a otra página, hace una
+               acción (escribir >>número en el formulario) -->
+          <button type="button" class="boton-responder">Responder</button>
+        </header>
+        <p class="hilo-comentario"></p>
+      </div>
+    </article>
+  </template>
+
+  <!-- defer: se ejecutan en orden cuando el HTML ya está cargado -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1/dist/umd/supabase.js"
+          integrity="sha384-K1nraABOP/zFehpLIUksXebbs7jMpB8gYMlb+uhVKZcWT/9Vkq1+qhv6ndC+1Yuz"
+          crossorigin="anonymous" defer></script>
+  <script src="js/supabase.js" defer></script>
+  <script src="js/comun.js" defer></script>
+  <script src="js/imagenes.js" defer></script>
+  <!-- Vista previa del mensaje citado al pasar el ratón por >>123 -->
+  <script src="js/citas.js" defer></script>
+  <script src="js/hilo.js" defer></script>
+</body>
+</html>

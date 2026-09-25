@@ -9,6 +9,8 @@
   <!-- Sin defer a propósito: aplica el tema ANTES de pintar la página,
        así no se ve un destello del tema equivocado -->
   <script src="../js/tema.js"></script>
+  <!-- Igual que tema.js: sin defer para aplicar el estilo antes de pintar -->
+  <script src="../js/estilo.js"></script>
 </head>
 
 <!-- class="tablero-musica" cambia la variable --acento a morado en TODA la página.
@@ -16,28 +18,71 @@
      en qué tablón está (así el mismo script sirve para /anime/, /juegos/ o /musica/). -->
 <body class="tablero-musica" data-tablon="musica">
 
+  <!-- ===== BARRA DE TABLONES =====
+       Va arriba del todo para saltar de un tablón a otro sin volver a la portada.
+       aria-current="page" marca el tablón en el que estás (lo leen los lectores
+       de pantalla y el CSS lo usa para resaltarlo). -->
+  <nav class="barra-tablones" aria-label="Tablones">
+    <a href="../index.html">Inicio</a>
+    <ul>
+      <li><a href="../anime/index.html">anime</a></li>
+      <li><a href="../juegos/index.html">juegos</a></li>
+      <li><a href="../musica/index.html" aria-current="page">musica</a></li>
+    </ul>
+  </nav>
+
   <!-- ===== BANNER DEL TABLÓN ===== -->
   <header class="banner banner-tablon">
-    <!-- Botón de tema. type="button" = no envía formularios.
-         Los SVG son decorativos (aria-hidden); el nombre del botón
-         para lectores de pantalla es el texto de .boton-tema-texto,
-         que el JavaScript cambia según el tema. -->
-    <button type="button" id="boton-tema" class="boton-tema">
-      <span class="boton-tema-iconos" aria-hidden="true">
-        <!-- Luna -->
-        <svg class="icono-luna" viewBox="0 0 24 24" width="20" height="20" fill="none"
-             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-        </svg>
-        <!-- Sol -->
-        <svg class="icono-sol" viewBox="0 0 24 24" width="20" height="20" fill="none"
-             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="4"/>
-          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
-        </svg>
-      </span>
-      <span class="boton-tema-texto">Modo oscuro</span>
-    </button>
+    <!-- ===== CONTROLES DE LA ESQUINA =====
+         Este contenedor es el que está fijo arriba a la derecha.
+         Dentro van el selector de estilo y el botón de tema, uno al lado del otro. -->
+    <div class="controles-esquina">
+
+      <!-- Selector de estilo: un botón que abre/cierra una lista.
+           aria-expanded dice a los lectores de pantalla si está abierta
+           (el JavaScript lo cambia y el CSS lo usa para animar).
+           aria-controls indica qué elemento abre este botón. -->
+      <div class="selector-estilo">
+        <button type="button" id="boton-estilo" class="boton-estilo"
+                aria-expanded="false" aria-controls="menu-estilos">
+          <!-- Paleta de pintor (decorativa) -->
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a10 10 0 0 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.3A5.7 5.7 0 0 0 22 9.7C22 5.4 17.5 2 12 2z"/>
+            <circle cx="7.5" cy="11.5" r="1"/><circle cx="10.5" cy="7.5" r="1"/><circle cx="15.5" cy="7.5" r="1"/>
+          </svg>
+          Estilo
+          <!-- Flecha: gira al abrir el menú -->
+          <svg class="flecha-estilo" viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden="true"
+               stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m6 9 6 6 6-6"/>
+          </svg>
+        </button>
+        <!-- Vacía a propósito: el JavaScript la rellena con los estilos -->
+        <ul id="menu-estilos" class="menu-estilos"></ul>
+      </div>
+
+      <!-- Botón de tema. type="button" = no envía formularios.
+           Los SVG son decorativos (aria-hidden); el nombre del botón
+           para lectores de pantalla es el texto de .boton-tema-texto,
+           que el JavaScript cambia según el tema. -->
+      <button type="button" id="boton-tema" class="boton-tema">
+        <span class="boton-tema-iconos" aria-hidden="true">
+          <!-- Luna -->
+          <svg class="icono-luna" viewBox="0 0 24 24" width="20" height="20" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+          <!-- Sol -->
+          <svg class="icono-sol" viewBox="0 0 24 24" width="20" height="20" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+          </svg>
+        </span>
+        <span class="boton-tema-texto">Modo oscuro</span>
+      </button>
+    </div>
 
     <!-- "Migas de pan": te dicen dónde estás y te dejan volver atrás -->
     <nav class="banner-migas" aria-label="Estás aquí">
@@ -78,7 +123,7 @@
         <div class="formulario-acciones">
           <button type="submit" class="boton">Publicar hilo</button>
           <p class="formulario-ayuda">
-            La imagen es obligatoria (máx. 500 KB). Empieza una línea con &gt; para escribir en verde.
+            La imagen es obligatoria (máx. 2 MB). Empieza una línea con &gt; para escribir en verde.
           </p>
           <!-- role="alert": los lectores de pantalla leen este texto en cuanto cambia -->
           <p id="form-error" class="formulario-error" role="alert"></p>
@@ -113,7 +158,13 @@
     <!-- <article> = contenido independiente con sentido propio (un hilo) -->
     <article class="hilo">
       <figure class="hilo-imagen">
-        <img alt="Imagen del hilo">
+        <!-- El enlace lleva a la imagen original. js/imagenes.js cambia el clic
+             por "abrir en grande en el centro" y añade la vista previa al pasar el ratón.
+             rel="noopener noreferrer": la pestaña nueva no puede tocar esta
+             página ni sabe desde dónde vienes. -->
+        <a class="enlace-imagen" target="_blank" rel="noopener noreferrer">
+          <img class="miniatura" alt="Imagen del hilo">
+        </a>
       </figure>
       <div class="hilo-contenido">
         <header class="hilo-cabecera">
@@ -122,14 +173,37 @@
           <!-- <time> marca una fecha de forma que las máquinas la entienden -->
           <time class="hilo-fecha"></time>
           <span class="hilo-numero"></span>
+          <!-- Lleva a la página del hilo, donde se puede responder -->
+          <a class="boton-responder">Responder</a>
         </header>
         <p class="hilo-comentario"></p>
+        <!-- Aquí va "3 respuestas" -->
+        <p class="hilo-resumen"></p>
       </div>
     </article>
   </template>
 
-  <!-- defer: el script se descarga en paralelo pero se ejecuta cuando el HTML
-       ya está cargado. Así puede encontrar el formulario y la plantilla. -->
+  <!-- defer: los scripts se descargan en paralelo pero se ejecutan cuando el HTML
+       ya está cargado, y SIEMPRE en este orden. El orden importa:
+       1) la librería de Supabase crea la variable "supabase"
+       2) supabase.js la usa para crear "clienteSupabase"
+       3) comun.js e imagenes.js preparan funciones que usa tablon.js
+       4) tablon.js usa todo lo anterior para leer y publicar hilos -->
+
+  <!-- Librería oficial supabase-js desde un CDN, con la versión EXACTA (2.117.1).
+       integrity = "huella" del archivo: si alguien lo modifica en el CDN, la
+       huella no coincide y el navegador NO lo ejecuta (se llama SRI).
+       crossorigin="anonymous" es obligatorio para que integrity funcione. -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1/dist/umd/supabase.js"
+          integrity="sha384-K1nraABOP/zFehpLIUksXebbs7jMpB8gYMlb+uhVKZcWT/9Vkq1+qhv6ndC+1Yuz"
+          crossorigin="anonymous" defer></script>
+  <script src="../js/supabase.js" defer></script>
+  <!-- Funciones compartidas con la página del hilo -->
+  <script src="../js/comun.js" defer></script>
+  <!-- Imágenes: visor en el centro con clic y vista previa al pasar el ratón -->
+  <script src="../js/imagenes.js" defer></script>
+  <!-- Vista previa del mensaje citado al pasar el ratón por >>123 -->
+  <script src="../js/citas.js" defer></script>
   <script src="../js/tablon.js" defer></script>
 </body>
 </html>

@@ -1,7 +1,8 @@
 /* =========================================================
    TABLÓN — lógica de un tablón (crear y mostrar hilos)
-   Por ahora los hilos se guardan en localStorage (en TU navegador).
-   Cuando pasemos a Supabase, solo cambiarán cargarHilos() y guardarHilos().
+   Los hilos se guardan en Supabase (tabla "hilos") y las imágenes
+   en el bucket "imagenes". Así todos los visitantes ven lo mismo.
+   Usa "clienteSupabase" (js/supabase.js) y las funciones de js/comun.js.
    ========================================================= */
 
 // ---------- 1. CONFIGURACIÓN ----------
@@ -9,114 +10,98 @@
 // Leemos data-tablon="anime" del <body>. dataset convierte data-* en propiedades.
 const idTablon = document.body.dataset.tablon;
 
-// Cada tablón guarda sus hilos con una clave distinta: "truechan-hilos-anime", etc.
-const CLAVE_ALMACEN = `truechan-hilos-${idTablon}`;
-
-// Tamaño máximo de la imagen: 500 KB (1 KB = 1024 bytes).
-// localStorage solo admite unos 5 MB en total, por eso somos estrictos.
-const TAMANO_MAXIMO = 500 * 1024;
-
-// Tipos de imagen permitidos. SVG NO está: un SVG puede contener <script>.
-const TIPOS_PERMITIDOS = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+// Cuántos hilos mostramos como máximo (los de actividad más reciente)
+const LIMITE_HILOS = 50;
 
 // ---------- 2. REFERENCIAS A ELEMENTOS DEL HTML ----------
 const formulario = document.getElementById('form-hilo');
+const botonPublicar = formulario.querySelector('button[type="submit"]');
 const mensajeError = document.getElementById('form-error');
 const listaHilos = document.getElementById('lista-hilos');
 const avisoSinHilos = document.getElementById('sin-hilos');
 const plantilla = document.getElementById('plantilla-hilo');
 
-// ---------- 3. GUARDAR Y CARGAR ----------
+// ---------- 3. LEER Y CREAR HILOS EN SUPABASE ----------
 
-// Devuelve el array de hilos guardado, o un array vacío si no hay nada.
-function cargarHilos() {
-  // try/catch: si los datos están corruptos o el navegador bloquea
-  // localStorage, no queremos que la página entera se rompa.
-  try {
-    const texto = localStorage.getItem(CLAVE_ALMACEN);
-    // localStorage solo guarda texto; JSON.parse lo convierte de vuelta en array
-    return texto ? JSON.parse(texto) : [];
-  } catch {
-    return [];
-  }
+// Pide a Supabase los hilos de este tablón. Es "async" porque la respuesta
+// viaja por internet y tarda: "await" espera a que llegue sin congelar la página.
+async function cargarHilos() {
+  // Se lee casi como una frase: "de la tabla hilos, selecciona estas columnas,
+  // donde tablon sea igual a idTablon, ordenadas por último bump (más reciente
+  // primero), como máximo 50".
+  // respuestas(count) = "y cuántas respuestas tiene cada hilo". Supabase lo
+  // sabe gracias a la clave foránea respuestas.hilo_id → hilos.id
+  const { data, error } = await clienteSupabase
+    .from('hilos')
+    .select('id, nombre, asunto, comentario, imagen, creado_en, respuestas(count)')
+    .eq('tablon', idTablon)
+    .order('ultimo_bump', { ascending: false })
+    .limit(LIMITE_HILOS);
+
+  if (error) throw error;
+  return data;
 }
 
-// Guarda el array de hilos. Puede lanzar un error si no queda espacio.
-function guardarHilos(hilos) {
-  // JSON.stringify convierte el array en texto para poder guardarlo
-  localStorage.setItem(CLAVE_ALMACEN, JSON.stringify(hilos));
+// Guarda un hilo nuevo en la tabla y devuelve su número (id).
+// Solo enviamos las columnas que la base de datos nos deja escribir
+// (id, fechas y bump los pone el servidor).
+// .select('id').single() = "después de insertar, devuélveme el id nuevo"
+async function crearHilo(hilo) {
+  const { data, error } = await clienteSupabase
+    .from('hilos')
+    .insert(hilo)
+    .select('id')
+    .single();
+
+  if (error) throw error;
+  return data.id;
 }
 
-// ---------- 4. LEER LA IMAGEN ----------
-
-// FileReader lee el archivo y lo convierte en un "data URL":
-// un texto larguísimo tipo "data:image/png;base64,iVBOR..." que <img> sabe mostrar.
-// Devuelve una Promise porque leer un archivo tarda (es asíncrono).
-function leerImagen(archivo) {
-  return new Promise((resolver, rechazar) => {
-    const lector = new FileReader();
-    lector.onload = () => resolver(lector.result);
-    lector.onerror = () => rechazar(lector.error);
-    lector.readAsDataURL(archivo);
-  });
-}
-
-// ---------- 5. PINTAR LOS HILOS ----------
-
-// Escribe el comentario línea a línea. Las líneas que empiezan por ">"
-// van dentro de un <span class="greentext"> (el clásico texto verde).
-// SEGURIDAD: usamos textContent / append(texto), NUNCA innerHTML.
-// Si alguien escribe <script>...</script>, se mostrará como texto normal.
-function pintarComentario(elemento, texto) {
-  const lineas = texto.split('\n');
-
-  lineas.forEach((linea, indice) => {
-    // Entre línea y línea añadimos un salto <br>
-    if (indice > 0) {
-      elemento.append(document.createElement('br'));
-    }
-
-    if (linea.startsWith('>')) {
-      const verde = document.createElement('span');
-      verde.className = 'greentext';
-      verde.textContent = linea;
-      elemento.append(verde);
-    } else {
-      // append() con un texto crea un nodo de texto: tampoco interpreta HTML
-      elemento.append(linea);
-    }
-  });
-}
+// ---------- 4. PINTAR LOS HILOS ----------
 
 // Crea el <article> de UN hilo a partir de la plantilla y lo devuelve.
 function crearElementoHilo(hilo) {
   // cloneNode(true) copia la plantilla con todo lo que tiene dentro
   const copia = plantilla.content.cloneNode(true);
 
-  // Solo aceptamos imágenes "data:image/...". Si alguien manipulara
-  // localStorage para meter otra cosa, no la cargamos.
-  const img = copia.querySelector('img');
-  if (hilo.imagen.startsWith('data:image/')) {
-    img.src = hilo.imagen;
-  }
+  // Dirección de la página del hilo. hilo.id es un número (lo pone la
+  // base de datos), así que es seguro meterlo en la URL.
+  const urlHilo = `../hilo.html?id=${hilo.id}`;
 
-  copia.querySelector('.hilo-asunto').textContent = hilo.asunto;
-  copia.querySelector('.hilo-nombre').textContent = hilo.nombre;
+  // id="p123": permite enlazar a este mensaje con #p123
+  copia.querySelector('.hilo').id = `p${hilo.id}`;
 
-  const fecha = copia.querySelector('.hilo-fecha');
-  fecha.dateTime = hilo.fecha;  // formato máquina (atributo datetime)
-  fecha.textContent = new Date(hilo.fecha).toLocaleString('es');  // formato humano
+  ponerImagen(copia.querySelector('.hilo-imagen'), hilo.imagen);
 
-  copia.querySelector('.hilo-numero').textContent = `N.º ${hilo.numero}`;
+  // El asunto es opcional: si es null ponemos texto vacío ("??" = "si es null, usa esto")
+  copia.querySelector('.hilo-asunto').textContent = hilo.asunto ?? '';
 
-  pintarComentario(copia.querySelector('.hilo-comentario'), hilo.comentario);
+  // Las citas >>123 de este hilo llevan a su página
+  rellenarMensaje(copia, hilo, { idOP: hilo.id, enlaceBase: urlHilo });
+
+  copia.querySelector('.boton-responder').href = urlHilo;
+
+  // Supabase devuelve el recuento así: respuestas: [{ count: 3 }]
+  const total = hilo.respuestas[0]?.count ?? 0;
+  copia.querySelector('.hilo-resumen').textContent =
+    total === 1 ? '1 respuesta' : `${total} respuestas`;
 
   return copia;
 }
 
-// Vacía la lista y vuelve a pintar todos los hilos.
-function mostrarHilos() {
-  const hilos = cargarHilos();
+// Descarga los hilos, vacía la lista y los vuelve a pintar.
+async function mostrarHilos() {
+  let hilos;
+  try {
+    hilos = await cargarHilos();
+  } catch (error) {
+    // Sin conexión, Supabase caído... Avisamos en vez de dejar la página rota.
+    // console.error lo muestra en la consola del navegador (F12) para depurar.
+    console.error(error);
+    avisoSinHilos.textContent = 'No se pudieron cargar los hilos. Recarga la página.';
+    avisoSinHilos.hidden = false;
+    return;
+  }
 
   // replaceChildren() sin argumentos borra todo lo que había dentro
   listaHilos.replaceChildren();
@@ -126,9 +111,8 @@ function mostrarHilos() {
   avisoSinHilos.hidden = hilos.length > 0;
 }
 
-// ---------- 6. ENVÍO DEL FORMULARIO ----------
+// ---------- 5. ENVÍO DEL FORMULARIO ----------
 
-// "async" permite usar "await" dentro para esperar a que se lea la imagen.
 formulario.addEventListener('submit', async (evento) => {
   // Evita el comportamiento normal (recargar la página enviando los datos)
   evento.preventDefault();
@@ -141,6 +125,8 @@ formulario.addEventListener('submit', async (evento) => {
   const archivo = formulario.imagen.files[0];  // el primer (y único) archivo elegido
 
   // --- Validaciones: si algo falla, mostramos el error y paramos con "return" ---
+  // Son para dar mensajes claros; la seguridad real está en la base de datos,
+  // porque cualquiera puede saltarse este JavaScript.
   if (!comentario) {
     mensajeError.textContent = 'Escribe un comentario.';
     return;
@@ -149,46 +135,42 @@ formulario.addEventListener('submit', async (evento) => {
     mensajeError.textContent = 'Para crear un hilo necesitas una imagen.';
     return;
   }
-  if (!TIPOS_PERMITIDOS.includes(archivo.type)) {
-    mensajeError.textContent = 'Formato no permitido. Usa PNG, JPG, GIF o WEBP.';
-    return;
-  }
-  if (archivo.size > TAMANO_MAXIMO) {
-    mensajeError.textContent = 'La imagen pesa más de 500 KB.';
+  const errorImagen = validarImagen(archivo);
+  if (errorImagen) {
+    mensajeError.textContent = errorImagen;
     return;
   }
 
-  const hilos = cargarHilos();
-
-  // Número del hilo: el del más reciente + 1. "?." evita un error si no hay hilos,
-  // y "?? 0" usa 0 en ese caso.
-  const numero = (hilos[0]?.numero ?? 0) + 1;
+  // Desactivamos el botón mientras se publica: así un doble clic
+  // no crea el hilo dos veces.
+  botonPublicar.disabled = true;
 
   try {
-    const nuevoHilo = {
-      numero,
+    // Primero la imagen (necesitamos su ruta) y después el hilo
+    const imagen = await subirImagen(archivo, idTablon);
+    const idNuevo = await crearHilo({
+      tablon: idTablon,
       nombre,
-      asunto,
+      asunto: asunto || null,  // asunto vacío → null (sin asunto)
       comentario,
-      imagen: await leerImagen(archivo),
-      fecha: new Date().toISOString(),  // fecha en formato estándar
-    };
-
-    // unshift() añade al PRINCIPIO: los hilos nuevos salen arriba
-    hilos.unshift(nuevoHilo);
-    guardarHilos(hilos);
+      imagen,
+    });
+    // Lo apuntamos como nuestro para que salga "(Tú)"
+    guardarMiMensaje(idNuevo);
   } catch (error) {
-    // El error más probable: localStorage lleno (QuotaExceededError)
-    mensajeError.textContent = error.name === 'QuotaExceededError'
-      ? 'No queda espacio en el navegador para más hilos.'
-      : 'No se pudo publicar el hilo.';
+    console.error(error);
+    mensajeError.textContent = 'No se pudo publicar el hilo. Inténtalo de nuevo.';
     return;
+  } finally {
+    // "finally" se ejecuta SIEMPRE, haya ido bien o mal:
+    // volvemos a activar el botón en los dos casos.
+    botonPublicar.disabled = false;
   }
 
   formulario.reset();  // vacía el formulario
-  mostrarHilos();
+  await mostrarHilos();
 });
 
-// ---------- 7. ARRANQUE ----------
-// Al cargar la página, pintamos los hilos que ya hubiera guardados.
+// ---------- 6. ARRANQUE ----------
+// Al cargar la página, pintamos los hilos que haya en Supabase.
 mostrarHilos();
