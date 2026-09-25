@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>/musica/</title>
+  <!-- "../" significa "sube una carpeta": styles.css está fuera de /musica/ -->
+  <link rel="stylesheet" href="../styles.css">
+  <!-- Sin defer a propósito: aplica el tema ANTES de pintar la página,
+       así no se ve un destello del tema equivocado -->
+  <script src="../js/tema.js"></script>
+</head>
+
+<!-- class="tablero-musica" cambia la variable --acento a morado en TODA la página.
+     data-tablon="musica" es un dato propio que leerá el JavaScript para saber
+     en qué tablón está (así el mismo script sirve para /anime/, /juegos/ o /musica/). -->
+<body class="tablero-musica" data-tablon="musica">
+
+  <!-- ===== BANNER DEL TABLÓN ===== -->
+  <header class="banner banner-tablon">
+    <!-- Botón de tema. type="button" = no envía formularios.
+         Los SVG son decorativos (aria-hidden); el nombre del botón
+         para lectores de pantalla es el texto de .boton-tema-texto,
+         que el JavaScript cambia según el tema. -->
+    <button type="button" id="boton-tema" class="boton-tema">
+      <span class="boton-tema-iconos" aria-hidden="true">
+        <!-- Luna -->
+        <svg class="icono-luna" viewBox="0 0 24 24" width="20" height="20" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+        <!-- Sol -->
+        <svg class="icono-sol" viewBox="0 0 24 24" width="20" height="20" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+        </svg>
+      </span>
+      <span class="boton-tema-texto">Modo oscuro</span>
+    </button>
+
+    <!-- "Migas de pan": te dicen dónde estás y te dejan volver atrás -->
+    <nav class="banner-migas" aria-label="Estás aquí">
+      <a href="../index.html">TrueChan</a> / musica
+    </nav>
+    <h1 class="banner-nombre">/musica/</h1>
+    <p class="banner-lema">Comparte lo que escuchas y descubre algo nuevo.</p>
+  </header>
+
+  <main class="tablon">
+
+    <!-- ===== FORMULARIO PARA CREAR UN HILO ===== -->
+    <!-- Reutilizamos la "caja con encabezado" de la portada -->
+    <section class="caja">
+      <h2 class="caja-titulo">Crear un hilo</h2>
+
+      <!-- novalidate: desactiva los avisos automáticos del navegador,
+           porque validamos nosotros en JavaScript con mensajes en español -->
+      <form id="form-hilo" class="caja-cuerpo formulario" novalidate>
+
+        <!-- Cada <label> va unido a su campo con for="..." = id="...".
+             Así, al hacer clic en el texto se activa el campo (y ayuda a la accesibilidad). -->
+        <label for="nombre">Nombre</label>
+        <input type="text" id="nombre" name="nombre" placeholder="Anónimo" maxlength="50">
+
+        <label for="asunto">Asunto</label>
+        <input type="text" id="asunto" name="asunto" maxlength="100">
+
+        <label for="comentario">Comentario</label>
+        <textarea id="comentario" name="comentario" maxlength="2000" required></textarea>
+
+        <label for="imagen">Imagen</label>
+        <!-- accept limita qué archivos ofrece el selector. NO es seguridad real:
+             el usuario puede saltárselo, por eso también lo comprobamos en JS. -->
+        <input type="file" id="imagen" name="imagen"
+               accept="image/png, image/jpeg, image/gif, image/webp" required>
+
+        <div class="formulario-acciones">
+          <button type="submit" class="boton">Publicar hilo</button>
+          <p class="formulario-ayuda">
+            La imagen es obligatoria (máx. 500 KB). Empieza una línea con &gt; para escribir en verde.
+          </p>
+          <!-- role="alert": los lectores de pantalla leen este texto en cuanto cambia -->
+          <p id="form-error" class="formulario-error" role="alert"></p>
+        </div>
+      </form>
+    </section>
+
+    <!-- ===== LISTA DE HILOS ===== -->
+    <!-- aria-labelledby enlaza la sección con su título, para lectores de pantalla -->
+    <section aria-labelledby="titulo-hilos">
+      <h2 id="titulo-hilos" class="seccion-titulo">Hilos</h2>
+      <p id="sin-hilos" class="sin-hilos">No hay hilos todavía. ¡Sé el primero!</p>
+      <!-- Aquí el JavaScript irá metiendo un <article> por cada hilo -->
+      <div id="lista-hilos" class="lista-hilos"></div>
+    </section>
+
+  </main>
+
+  <footer class="pie">
+    <nav aria-label="Enlaces del sitio">
+      <a href="../index.html">Inicio</a>
+      <a href="/reglas">Reglas</a>
+      <a href="/acerca">Acerca de</a>
+    </nav>
+  </footer>
+
+  <!-- ===== PLANTILLA DE UN HILO =====
+       <template> no se muestra en la página: es un "molde" en HTML.
+       El JavaScript lo copia y rellena para cada hilo. Así el HTML sigue
+       estando aquí (legible) y no escrito a mano dentro del JS. -->
+  <template id="plantilla-hilo">
+    <!-- <article> = contenido independiente con sentido propio (un hilo) -->
+    <article class="hilo">
+      <figure class="hilo-imagen">
+        <img alt="Imagen del hilo">
+      </figure>
+      <div class="hilo-contenido">
+        <header class="hilo-cabecera">
+          <span class="hilo-asunto"></span>
+          <span class="hilo-nombre"></span>
+          <!-- <time> marca una fecha de forma que las máquinas la entienden -->
+          <time class="hilo-fecha"></time>
+          <span class="hilo-numero"></span>
+        </header>
+        <p class="hilo-comentario"></p>
+      </div>
+    </article>
+  </template>
+
+  <!-- defer: el script se descarga en paralelo pero se ejecuta cuando el HTML
+       ya está cargado. Así puede encontrar el formulario y la plantilla. -->
+  <script src="../js/tablon.js" defer></script>
+</body>
+</html>

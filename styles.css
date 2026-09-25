@@ -13,6 +13,65 @@
   --texto-suave: #6a6075;    /* texto secundario */
   --borde: #d9cdea;          /* bordes finos */
   --acento: var(--morado);   /* acento por defecto; cada tablón lo cambia */
+  --barra: var(--morado-oscuro);   /* fondo de las barras de título y botones */
+  --texto-barra: #ffffff;          /* texto encima de esas barras */
+  --titulo: var(--morado-oscuro);  /* color de los títulos grandes */
+  --error: #c0392b;                /* mensajes de error */
+  --greentext: #789922;            /* líneas que empiezan por ">" */
+  /* color-scheme avisa al navegador del tema: así pinta los campos
+     de formulario y las barras de scroll a juego */
+  color-scheme: light;
+}
+
+/* ---------- MODO OSCURO ----------
+   Cuando el JavaScript pone data-tema="oscuro" en <html>,
+   estas variables sustituyen a las de arriba. Como todo el CSS
+   usa var(--...), la página entera cambia de color sola. */
+:root[data-tema="oscuro"] {
+  --fondo: #16111d;          /* casi negro con un toque morado */
+  --superficie: #221a2d;     /* cajas un poco más claras que el fondo */
+  --morado: #b791ea;         /* morado más claro para que se lea sobre oscuro */
+  --texto: #ece6f3;          /* texto casi blanco */
+  --texto-suave: #a99bb8;
+  --borde: #3a2e4a;
+  --barra: #3d2360;
+  --titulo: #d9c6f7;         /* títulos en lavanda clara */
+  --error: #ff7b6b;
+  --greentext: #a8c65a;
+  color-scheme: dark;
+}
+
+/* Los colores de los tablones, un poco más claros en modo oscuro
+   para que no se pierdan sobre el fondo */
+:root[data-tema="oscuro"] .tablero-anime  { --acento: #f07ab5; }
+:root[data-tema="oscuro"] .tablero-juegos { --acento: #4cc47f; }
+:root[data-tema="oscuro"] .tablero-musica { --acento: #a97ff0; }
+
+/* =========================================================
+   1b. FUENTE PROPIA (Nunito)
+   @font-face "registra" una fuente: le damos un nombre y le
+   decimos dónde está el archivo. Después se usa en font-family
+   como cualquier otra. La ruta es relativa a ESTE archivo CSS,
+   por eso funciona también desde /anime/, /juegos/ y /musica/.
+   Servirla desde nuestra web (y no desde Google Fonts) evita
+   que un tercero vea la IP de quien visita TrueChan.
+   ========================================================= */
+@font-face {
+  font-family: "Nunito";
+  src: url("fuentes/nunito.woff2") format("woff2");
+  font-weight: 200 1000;      /* fuente variable: un archivo con todos los grosores */
+  font-style: normal;
+  font-display: swap;         /* mientras carga, muestra el texto con la fuente de respaldo */
+}
+
+/* La misma familia en cursiva: el navegador la elige solo
+   cuando algo lleva font-style: italic (como el lema del banner) */
+@font-face {
+  font-family: "Nunito";
+  src: url("fuentes/nunito-cursiva.woff2") format("woff2");
+  font-weight: 200 1000;
+  font-style: italic;
+  font-display: swap;
 }
 
 /* =========================================================
@@ -31,10 +90,20 @@ body {
   margin: 0;
   background: var(--fondo);
   color: var(--texto);
-  /* Fuentes del sistema, sencillas, como un imageboard clásico */
-  font-family: Verdana, Arial, Helvetica, sans-serif;
+  /* Nunito primero; si fallara, fuentes redondeadas del sistema
+     (ui-rounded = la redondeada de Apple) y al final cualquier sans-serif */
+  font-family: "Nunito", ui-rounded, "Varela Round", Verdana, sans-serif;
   font-size: 15px;
   line-height: 1.5;
+}
+
+/* Al cambiar de tema, los colores se funden en 0.3s en vez de saltar */
+body,
+.banner,
+.caja,
+.hilo,
+.pie {
+  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
 }
 
 a {
@@ -42,7 +111,7 @@ a {
 }
 
 a:hover {
-  color: var(--morado-oscuro);
+  color: var(--titulo);
 }
 
 /* =========================================================
@@ -58,7 +127,7 @@ a:hover {
 .banner-nombre {
   margin: 0;
   font-size: 3rem;            /* nombre grande */
-  color: var(--morado-oscuro);
+  color: var(--titulo);
   letter-spacing: 0.05em;
 }
 
@@ -112,8 +181,8 @@ a:hover {
 .caja-titulo {
   margin: 0;
   padding: 0.5rem 0.75rem;
-  background: var(--morado-oscuro);
-  color: #ffffff;
+  background: var(--barra);
+  color: var(--texto-barra);
   font-size: 1rem;
 }
 
@@ -185,8 +254,12 @@ a:hover {
   border-radius: 4px;
   color: var(--texto);
   text-decoration: none;      /* quita el subrayado típico de los enlaces */
-  /* transition anima suavemente los cambios del :hover */
-  transition: background-color 0.15s, border-color 0.15s, transform 0.15s;
+  /* Sombra sólida (sin difuminar) justo debajo, del color del tablón.
+     Valores: desplazamiento-x desplazamiento-y difuminado color.
+     Hace que la tarjeta parezca un botón con "grosor". */
+  box-shadow: 0 4px 0 var(--acento);
+  /* transition anima suavemente los cambios del :hover y del :active */
+  transition: background-color 0.15s, border-color 0.15s, transform 0.1s, box-shadow 0.1s;
 }
 
 .tarjeta-nombre {
@@ -213,6 +286,27 @@ a:hover {
   outline: none;
 }
 
+/* :active = MIENTRAS el botón del ratón está pulsado sobre la tarjeta.
+   La tarjeta baja 4px (translateY) y la sombra desaparece:
+   parece que el botón se hunde. Al soltar, vuelve a su sitio. */
+.tarjeta:active {
+  transform: translate(4px, 4px);         /* mantiene el desplazamiento del hover y baja */
+  box-shadow: 0 0 0 var(--acento);        /* sombra a 0 = botón "hundido" */
+  transition-duration: 0.05s;             /* hundirse es más rápido que subir */
+}
+
+/* Accesibilidad: si el usuario pidió "reducir movimiento" en su sistema,
+   quitamos los desplazamientos y dejamos solo los cambios de color. */
+@media (prefers-reduced-motion: reduce) {
+  .tarjeta,
+  .tarjeta:hover,
+  .tarjeta:focus-visible,
+  .tarjeta:active {
+    transform: none;
+    transition: background-color 0.15s, border-color 0.15s;
+  }
+}
+
 /* =========================================================
    7. PIE DE PÁGINA (footer)
    ========================================================= */
@@ -228,4 +322,311 @@ a:hover {
   justify-content: center;
   flex-wrap: wrap;            /* en pantallas muy estrechas los enlaces bajan de línea */
   gap: 1.5rem;
+}
+
+/* =========================================================
+   8. PÁGINA DE TABLÓN (anime/index.html y futuros tablones)
+   El <body> lleva la clase tablero-*, así que var(--acento)
+   aquí vale el color del tablón (rosa en /anime/).
+   ========================================================= */
+
+/* El banner del tablón usa el color del tablón en la línea inferior */
+.banner-tablon {
+  border-bottom-color: var(--acento);
+}
+
+.banner-tablon .banner-nombre {
+  color: var(--acento);
+}
+
+.banner-migas {
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+  margin-bottom: 0.5rem;
+}
+
+/* Contenedor principal: una sola columna centrada */
+.tablon {
+  display: grid;
+  gap: 1.5rem;
+  max-width: 1000px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+/* ---------- Formulario ----------
+   Grid de 2 columnas: a la izquierda las etiquetas (max-content =
+   lo que mida la etiqueta más larga), a la derecha los campos. */
+.formulario {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.5rem 0.75rem;        /* separación: filas columnas */
+  align-items: center;
+  max-width: 600px;
+}
+
+.formulario label {
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.formulario input[type="text"],
+.formulario textarea {
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--borde);
+  border-radius: 4px;
+  font: inherit;              /* los campos no heredan la fuente por defecto */
+  color: var(--texto);
+  background: var(--superficie);
+}
+
+.formulario textarea {
+  min-height: 6rem;
+  resize: vertical;           /* solo se puede estirar hacia abajo */
+}
+
+/* Borde de color al escribir en un campo */
+.formulario input:focus-visible,
+.formulario textarea:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 1px;
+}
+
+/* El botón y los mensajes van en la columna de los campos */
+.formulario-acciones {
+  grid-column: 2;
+}
+
+.boton {
+  padding: 0.45rem 1.1rem;
+  background: var(--barra);
+  color: var(--texto-barra);
+  border: none;
+  border-radius: 4px;
+  font: inherit;
+  font-weight: bold;
+  cursor: pointer;            /* manita al pasar el ratón */
+}
+
+.boton:hover,
+.boton:focus-visible {
+  background: var(--acento);
+}
+
+.formulario-ayuda {
+  font-size: 0.8rem;
+  color: var(--texto-suave);
+  margin: 0.5rem 0 0;
+}
+
+.formulario-error {
+  color: var(--error);
+  font-weight: bold;
+  margin: 0.25rem 0 0;
+}
+
+/* ---------- Lista de hilos ---------- */
+.seccion-titulo {
+  margin: 0 0 0.75rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 2px solid var(--acento);
+  color: var(--titulo);
+  font-size: 1.2rem;
+}
+
+.sin-hilos {
+  color: var(--texto-suave);
+  font-style: italic;
+}
+
+.lista-hilos {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Cada hilo: imagen a la izquierda, texto a la derecha (flex) */
+.hilo {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 0.75rem;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-left: 5px solid var(--acento);
+  border-radius: 4px;
+}
+
+.hilo-imagen {
+  margin: 0;
+  flex-shrink: 0;             /* la imagen no se encoge si el texto es largo */
+}
+
+.hilo-imagen img {
+  display: block;
+  max-width: 200px;
+  max-height: 200px;
+  border: 1px solid var(--borde);
+}
+
+.hilo-contenido {
+  flex: 1;
+  min-width: 0;               /* permite que el texto largo se corte bien */
+}
+
+.hilo-cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+}
+
+.hilo-asunto {
+  color: var(--acento);
+  font-weight: bold;
+}
+
+.hilo-nombre {
+  color: var(--titulo);
+  font-weight: bold;
+}
+
+.hilo-comentario {
+  margin: 0.5rem 0 0;
+  overflow-wrap: anywhere;    /* corta palabras larguísimas (p. ej. "aaaaaaaa...") */
+}
+
+/* Texto verde clásico de imageboard para las líneas que empiezan por ">" */
+.greentext {
+  color: var(--greentext);
+}
+
+/* ---------- Móvil ---------- */
+@media (max-width: 767px) {
+  .formulario {
+    grid-template-columns: 1fr;   /* etiqueta encima del campo */
+  }
+
+  .formulario-acciones {
+    grid-column: auto;
+  }
+
+  .hilo {
+    flex-direction: column;       /* imagen arriba, texto debajo */
+  }
+
+  .hilo-imagen img {
+    max-width: 100%;
+  }
+}
+
+/* =========================================================
+   9. BOTÓN DE MODO OSCURO / CLARO
+   ========================================================= */
+.boton-tema {
+  /* position: fixed lo "pega" a la ventana: se queda en la
+     esquina superior derecha aunque hagas scroll */
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 10;                /* por encima del resto de elementos */
+
+  display: flex;
+  align-items: center;
+  gap: 0;                     /* sin hueco mientras está plegado */
+  height: 2.75rem;
+  padding: 0 0.8rem;
+  border: 2px solid var(--acento);
+  border-radius: 999px;       /* radio enorme = forma de píldora */
+  background: var(--superficie);
+  color: var(--titulo);
+  font: inherit;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 3px 0 var(--acento);   /* mismo efecto botón que las tarjetas */
+  transition: gap 0.35s, background-color 0.3s, color 0.3s,
+              transform 0.1s, box-shadow 0.1s;
+}
+
+/* Caja de los iconos: los dos SVG se colocan uno ENCIMA del otro */
+.boton-tema-iconos {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.boton-tema-iconos svg {
+  position: absolute;
+  inset: 0;
+  transition: transform 0.5s ease, opacity 0.3s;
+}
+
+/* Modo claro: se ve la luna (pulsa para ir a oscuro); el sol está
+   escondido: girado, encogido a 0 y transparente */
+.icono-sol {
+  opacity: 0;
+  transform: rotate(-90deg) scale(0);
+}
+
+/* Modo oscuro: se invierten. El cambio se anima gracias a transition:
+   uno gira hacia fuera mientras el otro gira hacia dentro */
+:root[data-tema="oscuro"] .icono-sol {
+  opacity: 1;
+  transform: rotate(0) scale(1);
+}
+
+:root[data-tema="oscuro"] .icono-luna {
+  opacity: 0;
+  transform: rotate(90deg) scale(0);
+}
+
+/* ----- Animación de despliegue -----
+   El texto empieza con ancho máximo 0 (invisible). Al pasar el
+   ratón o llegar con Tab, crece hasta 10rem y el botón se estira.
+   Se anima max-width porque "width: auto" no se puede animar. */
+.boton-tema-texto {
+  max-width: 0;
+  overflow: hidden;           /* lo que no cabe, no se ve */
+  white-space: nowrap;        /* el texto no salta de línea mientras crece */
+  opacity: 0;
+  transition: max-width 0.35s ease, opacity 0.25s;
+}
+
+.boton-tema:hover,
+.boton-tema:focus-visible {
+  gap: 0.5rem;                /* aparece el hueco entre icono y texto */
+}
+
+.boton-tema:hover .boton-tema-texto,
+.boton-tema:focus-visible .boton-tema-texto {
+  max-width: 10rem;
+  opacity: 1;
+}
+
+.boton-tema:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 3px;
+}
+
+/* Al pulsarlo se hunde, como las tarjetas */
+.boton-tema:active {
+  transform: translateY(3px);
+  box-shadow: 0 0 0 var(--acento);
+}
+
+/* Accesibilidad: sin movimiento si el usuario lo pidió */
+@media (prefers-reduced-motion: reduce) {
+  body,
+  .banner,
+  .caja,
+  .hilo,
+  .pie,
+  .boton-tema,
+  .boton-tema-iconos svg,
+  .boton-tema-texto {
+    transition: none;
+  }
 }

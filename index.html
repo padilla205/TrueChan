@@ -9,12 +9,36 @@
   <title>TrueChan — U wish i was wrong bitch</title>
   <!-- Enlazamos la hoja de estilos externa -->
   <link rel="stylesheet" href="styles.css">
+  <!-- Sin defer a propósito: aplica el tema ANTES de pintar la página,
+       así no se ve un destello del tema equivocado -->
+  <script src="js/tema.js"></script>
 </head>
 <body>
 
   <!-- ===== BANNER ===== -->
   <!-- <header> es la cabecera de la página: logo/nombre y lema -->
   <header class="banner">
+    <!-- Botón de tema. type="button" = no envía formularios.
+         Los SVG son decorativos (aria-hidden); el nombre del botón
+         para lectores de pantalla es el texto de .boton-tema-texto,
+         que el JavaScript cambia según el tema. -->
+    <button type="button" id="boton-tema" class="boton-tema">
+      <span class="boton-tema-iconos" aria-hidden="true">
+        <!-- Luna -->
+        <svg class="icono-luna" viewBox="0 0 24 24" width="20" height="20" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+        <!-- Sol -->
+        <svg class="icono-sol" viewBox="0 0 24 24" width="20" height="20" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+        </svg>
+      </span>
+      <span class="boton-tema-texto">Modo oscuro</span>
+    </button>
+
     <h1 class="banner-nombre">TrueChan</h1>
     <p class="banner-lema">U wish i was wrong bitch</p>
   </header>
@@ -60,17 +84,17 @@
 
         <!-- Cada tarjeta es un <a> entero: se puede hacer clic en cualquier parte.
              La clase tablero-* solo define el color de acento (ver styles.css) -->
-        <a class="tarjeta tablero-anime" href="/anime/">
+        <a class="tarjeta tablero-anime" href="anime/index.html">
           <span class="tarjeta-nombre">/anime/</span>
           <span class="tarjeta-desc">Anime, manga y cultura otaku.</span>
         </a>
 
-        <a class="tarjeta tablero-juegos" href="/juegos/">
+        <a class="tarjeta tablero-juegos" href="juegos/index.html">
           <span class="tarjeta-nombre">/juegos/</span>
           <span class="tarjeta-desc">Videojuegos de todas las épocas y plataformas.</span>
         </a>
 
-        <a class="tarjeta tablero-musica" href="/musica/">
+        <a class="tarjeta tablero-musica" href="musica/index.html">
           <span class="tarjeta-nombre">/musica/</span>
           <span class="tarjeta-desc">Comparte lo que escuchas y descubre algo nuevo.</span>
         </a>
